@@ -43,7 +43,7 @@ public class MyHashSet<T>: IHashSet<T> where T: SPSStudent, IEquatable<T>
 
     public T Add(T value)
     {
-        if(IsPresent(value))
+        if(!IsPresent(value))
         {
             _listOfItems.Add(value);
             return value;
