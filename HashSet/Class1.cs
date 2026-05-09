@@ -32,9 +32,18 @@ public class SPSStudent: ISPSStudent
 
 public class MyHashSet<T>: IHashSet<T> where T: SPSStudent, IEquatable<T>
 {
-    private readonly List<T> _listOfItems = new List<T>();
+    private readonly List<T?> _listOfItems;
+    private int _listSize;
 
-    public MyHashSet(){ }
+    public MyHashSet(int listSize)
+    {
+        _listOfItems = new List<T?>();
+        _listSize = listSize;
+        for(int i = 0; i < listSize; i++)
+        {
+            _listOfItems.Add(null);
+        }
+    }
 
     public bool IsPresent(T value)
     {
@@ -43,15 +52,27 @@ public class MyHashSet<T>: IHashSet<T> where T: SPSStudent, IEquatable<T>
 
     public T Add(T value)
     {
-        if(!IsPresent(value))
+        int index = Index(value);
+
+        if(_listOfItems[index] == null)
         {
-            _listOfItems.Add(value);
+            _listOfItems[index] = value;
             return value;
         }
-        else
+        if(_listOfItems[index] == value)
         {
-            return null;
+            Console.WriteLine("Duplicate");
+            return value;
         }
+        Console.WriteLine("Collision");
+        return value;
+
+    }
+    
+    public int Index(T value)
+    {
+        int hashCode = value.GetHashCode();
+        return hashCode % _listSize;
     }
 
     public void Rebalance()//just for build
