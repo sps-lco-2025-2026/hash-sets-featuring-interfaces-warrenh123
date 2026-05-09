@@ -1,3 +1,5 @@
+//SPSSTUDENT CLASS
+
 public class SPSStudent: ISPSStudent
 {
     private readonly string _name;
@@ -30,59 +32,149 @@ public class SPSStudent: ISPSStudent
     }
 }
 
+
+//HASHSET CLASS
 public class MyHashSet<T>: IHashSet<T> where T: SPSStudent, IEquatable<T>
 {
-    private readonly List<T?> _listOfItems;
+    private List<T?> _linearProbingList;
+    private List<List<T>> _chainingList;
     private int _listSize;
+    private int count;
+    private readonly string _collisionStrategy;
+    private const double LoadFactor = 0.75;
 
-    public MyHashSet(int listSize)
+
+    public MyHashSet(int listSize, string collisionStrategy)
     {
-        _listOfItems = new List<T?>();
         _listSize = listSize;
-        for(int i = 0; i < listSize; i++)
+        count = 0;
+        _collisionStrategy = collisionStrategy;
+
+        if(_collisionStrategy == "LinearProbing")
         {
-            _listOfItems.Add(null);
+            _linearProbingList = new List<T?>();
+            for(int i = 0; i < _listSize; i++)
+            {
+                _linearProbingList.Add(null);
+            }
+        }
+        else
+        {
+            _chainingList = new List<List<T>>();
+            for(int i = 0; i < _listSize; i++)
+            {
+                _chainingList.Add(new List<T>());
+            }
         }
     }
 
     public bool IsPresent(T value)
     {
-        return _listOfItems.Contains(value);
+        if(_collisionStrategy == "LinearProbing")
+        {
+            int index = Index(value);
+            int startIndex = index;
+            while(_linearProbingList[index] != null)
+            {
+                if (_linearProbingList[index]!.Equals(value)) return true;
+                index = (index + 1) % _listSize;
+                if (index == startIndex) break;
+            }
+            return false;
+        }
+        else
+        {
+            foreach(List<T> l in _chainingList)
+            {
+                if(l.Contains(value)) return true;
+            }
+            return false;
+        }
     }
+
+    public int Index(T value)
+    {
+        int hashCode = Math.Abs(value.GetHashCode());
+        return hashCode % _listSize;
+    }
+
 
     public T Add(T value)
     {
         int index = Index(value);
 
-        if(_listOfItems[index] == null)
-        {
-            _listOfItems[index] = value;
-            return value;
-        }
-        if(_listOfItems[index] == value)
-        {
-            Console.WriteLine("Duplicate");
-            return value;
-        }
-        Console.WriteLine("Collision");
-        return value;
+        if((double)count / _listSize >= LoadFactor) Rebalance();
 
+        if(_collisionStrategy == "LinearProbing")
+        {
+            while(_linearProbingList[index] != null)
+        {
+            if (_linearProbingList[index].Equals(value)) 
+            {
+                Console.WriteLine("Duplicate");
+                return value;
+            }
+            index = (index + 1) % _listSize;// wrap back to beginning
+        }
+
+        _linearProbingList[index] = value;
+        count++;
+        return value;
+        }
+        else
+        {
+            if(!_chainingList[index].Contains(value))
+            {
+                _chainingList[index].Add(value);
+                count++;
+            }
+            else
+            {
+                Console.WriteLine("Duplicate");
+            }
+            return value;
+        }
     }
     
-    public int Index(T value)
+    public void Rebalance()
     {
-        int hashCode = value.GetHashCode();
-        return hashCode % _listSize;
-    }
+        int oldListSize = _listSize;
+        _listSize *= 2;
+        count = 0;
 
-    public void Rebalance()//just for build
-    {
-        Console.WriteLine("Rebalancing....");
+        if(_collisionStrategy == "LinearProbing")
+        {
+            List<T?> oldList = _linearProbingList;
+            _linearProbingList = new List<T?>();
+
+            for(int i = 0; i < _listSize; i++) _linearProbingList.Add(null);
+
+            foreach(var t in oldList)
+            {
+                if(t != null) this.Add(t);
+            }
+        }
+        else
+        {
+            List<List<T>> oldList = _chainingList;
+            _chainingList = new List<List<T>>();
+
+            for(int i = 0; i < _listSize; i++) _chainingList.Add(new List<T>());
+
+            foreach(var i in oldList)
+            {
+                foreach(var j in i) this.Add(j);
+            }
+        }
+
+        Console.WriteLine("Rebalanced");
     }
-   
 }
 
 
+
+
+//INTERFACES
 public interface IHashSet<T> where T : SPSStudent, IEquatable<T>
 {
     T Add(T value);
